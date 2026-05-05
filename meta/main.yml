@@ -1,5 +1,7 @@
 ---
 galaxy_info:
+  namespace: pgvillage
+  role_name: firewall
   author: S. Mannem
   description: |
     firewalld can be used to manage firewall confoguration on a linux vm.
