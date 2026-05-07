@@ -1,7 +1,7 @@
 ---
 - name: Install firewalld packages when defined
   become: true
-  ansible.builtin.dnf:
+  ansible.builtin.package:
     name: "{{ firewall_packages }}"
     state: "{{ firewall_package_state }}"
 
