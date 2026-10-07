@@ -7,12 +7,15 @@
 
 - name: Start firewalld systemd services
   become: true
+  when: firewall_package_state != 'absent'
   ansible.builtin.systemd:
     name: "firewalld.service"
     state: started
     enabled: "true"
 
 - name: Permit traffic is required
+  become: true
+  when: firewall_package_state != 'absent'
   ansible.posix.firewalld:
     port: "{{ item.value }}/tcp"
     permanent: true
