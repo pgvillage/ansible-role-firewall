@@ -1,18 +1,23 @@
 ---
+# defaults file for firewall
+
+# Which firewall implementation this role should manage.
+# Options:
+# - firewalld: install, start and configure firewalld on the server
+# - external (or any other value): don't manage the server firewall (e.g. leave it to the cloud provider)
+# We could extend to firewall on debian/ubuntu, iptables, whatever, but for now this is fine
+firewall_type: external
+
+# State of the firewall packages (passed to ansible.builtin.package).
+# Use `present` to install, `latest` to install/upgrade, or `absent` to remove.
 firewall_package_state: present
 
+# List of packages to install when firewall_type is `firewalld`.
 firewall_packages:
   - firewalld
 
-# defaults file for firewall
-firewall_type: external
-# Options:
-# - firewalld (manage firewalld firewall
-# - leave to cloud, don;t manage server firewall
-# We could extend to firewall on debian/ubuntu, iptables, whatever, but for now this is fine
-
-firewall_local_segment: "{{ (ansible_facts.default_ipv4.network + '/' + ansible_facts.default_ipv4.netmask) | ipaddr('network/prefix') }}"
-
+# Dictionary of TCP ports to permanently open in firewalld.
+# The key is a descriptive name (used as loop label), the value is the TCP port number.
 firewall_ports:
   postgres: 5432
   stolon_proxy: 25432
