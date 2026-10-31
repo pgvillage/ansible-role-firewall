@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  vars:
+    firewall_type: firewalld
+    firewall_ports:
+      postgres: 5432
+      etcd_client: 2379
+  roles:
+    - role: pgvillage.firewall
