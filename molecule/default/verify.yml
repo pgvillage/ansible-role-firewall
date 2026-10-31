@@ -1,0 +1,57 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    - name: Read the service states
+      ansible.builtin.service_facts:
+
+    - name: Check that firewalld runs and is enabled
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['firewalld.service'].state == 'running'
+          - ansible_facts.services['firewalld.service'].status == 'enabled'
+
+    - name: List the open ports, at runtime and permanently
+      ansible.builtin.command: firewall-cmd {{ item }} --list-ports
+      loop: ["", "--permanent"]
+      register: open_ports
+      changed_when: false
+
+    - name: Check that exactly the configured ports are open
+      ansible.builtin.assert:
+        that: item.stdout.split() | sort == ['2379/tcp', '5432/tcp']
+        fail_msg: "firewall-cmd {{ item.item }} --list-ports: {{ item.stdout }}"
+      loop: "{{ open_ports.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    # Listen on an opened and on a closed port, and connect from the other host
+    - name: Start listeners on an open and a closed port
+      ansible.builtin.shell: |
+        nohup python3 -m http.server {{ item }} > /dev/null 2>&1 &
+      loop: [5432, 5999]
+      changed_when: false
+
+    - name: Wait until the listeners are up
+      ansible.builtin.wait_for:
+        port: "{{ item }}"
+        timeout: 10
+      loop: [5432, 5999]
+
+    - name: Connect to the open port of the other host
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[other].ansible_facts.default_ipv4.address }}"
+        port: 5432
+        timeout: 10
+      vars:
+        other: "{{ ansible_play_hosts_all | difference([inventory_hostname]) | first }}"
+
+    - name: Check that the closed port of the other host can not be reached
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[other].ansible_facts.default_ipv4.address }}"
+        port: 5999
+        timeout: 5
+      register: closed
+      failed_when: closed is not failed
+      vars:
+        other: "{{ ansible_play_hosts_all | difference([inventory_hostname]) | first }}"
